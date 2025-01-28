@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Best Route</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+      }
+      #map {
+        width: 100vw;
+        height: 100vh;
+      }
+      #controls {
+        padding: 10px;
+        background: #f8f9fa;
+      }
+      input {
+        padding: 8px 8px 8px 12px;
+        margin: 5px;
+        width: 200px;
+        border-radius: 20px;
+        border: 1px solid #ccc;
+      }
+      button {
+        padding: 5px 10px;
+        margin: 5px;
+        cursor: pointer;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="controls">
+      <input id="startLocation" placeholder="Start location" />
+      <input id="endLocation" placeholder="Destination" />
+      <button onclick="findRoute()">Find Route</button>
+    </div>
+    <div id="map"></div>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.2.0/dist/leaflet.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css"
+    />
+    <script src="https://unpkg.com/leaflet@1.2.0/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+    <script>
+      const map = L.map("map").setView(
+        [-6.917664859323157, 106.9338244223589],
+        13
+      );
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      let routingControl;
+
+      // Function to fetch coordinates from location name using OpenCage Geocoder API
+      async function getCoordinates(location) {
+        const apiKey = "49830a21d8d943e887c27c3473a0ac8a";
+        const response = await fetch(
+          `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(
+            location
+          )}&key=${apiKey}`
+        );
+        const data = await response.json();
+        if (data.results.length > 0) {
+          return {
+            lat: data.results[0].geometry.lat,
+            lng: data.results[0].geometry.lng,
+          };
+        } else {
+          throw new Error("Location not found");
+        }
+      }
+
+      async function findRoute() {
+        const startLocation = document.getElementById("startLocation").value;
+        const endLocation = document.getElementById("endLocation").value;
+
+        try {
+          // Get coordinates for start and end locations
+          const startCoords = await getCoordinates(startLocation);
+          const endCoords = await getCoordinates(endLocation);
+
+          const latLng1 = L.latLng(startCoords.lat, startCoords.lng);
+          const latLng2 = L.latLng(endCoords.lat, endCoords.lng);
+
+          // Clear existing route
+          if (routingControl) {
+            map.removeControl(routingControl);
+          }
+
+          // Add new route
+          routingControl = L.Routing.control({
+            waypoints: [latLng1, latLng2],
+            routeWhileDragging: true,
+          }).addTo(map);
+
+          // Focus map to the route
+          map.setView(latLng1, 13);
+        } catch (error) {
+          alert(error.message);
+        }
+      }
+    </script>
+  </body>
+</html>
